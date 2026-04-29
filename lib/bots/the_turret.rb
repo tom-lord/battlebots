@@ -20,6 +20,6 @@ class TheTurret < BattleBots::Bots::Bot
 
     bearing, distance = calculate_vector_to(enemy)
     aim_turret(bearing, distance)
-    @shoot = true
+    @shoot = distance < 400
   end
 end
