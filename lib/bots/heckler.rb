@@ -1,6 +1,6 @@
 require 'bots/bot'
 
-# Loiters near centre of the arena and heckles everyone. Won’t shoot — purely verbal & brick-wall stamina.
+# Loiters near centre of the arena and heckles everyone; occasional pot-shots (stamina tank).
 class Heckler < BattleBots::Bots::Bot
   def self.bot_source = :ai
 
@@ -23,9 +23,12 @@ class Heckler < BattleBots::Bots::Bot
   # Game ticks per insult (~180 ≈ 3s at 60fps before the bubble advances).
   INSULT_ROTATION_TICKS = 180
 
+  # When in range, fire ~50% more often than a 30%-of-opportunities baseline (0.30 × 1.3).
+  SHOOT_CHANCE = [0.50 * 1.3, 1.0].min
+
   def initialize
     @name = "Josh's Heckler"
-    @strength, @speed, @stamina, @sight = [2, 12, 81, 5]
+    @strength, @speed, @stamina, @sight = [6, 18, 71, 5]
     @bubble_tick = 0
   end
 
@@ -41,9 +44,16 @@ class Heckler < BattleBots::Bots::Bot
     ty = cy + Math.sin(t * 0.92) * ORBIT_RADIUS * 0.82 + wobble_y
 
     drive_toward(tx, ty, stop_within: 42)
-    # Dramatic gesticulation — no intent to hit anyone.
-    @aim = (@bubble_tick % 90 < 45) ? 1 : -1
-    @shoot = false
+
+    enemy = select_target
+    if enemy
+      bearing, distance = calculate_vector_to(enemy)
+      aim_turret(bearing, distance)
+      @shoot &&= rand < SHOOT_CHANCE
+    else
+      @aim = (@bubble_tick % 90 < 45) ? 1 : -1
+      @shoot = false
+    end
 
     stay_clear_of_walls
   end
